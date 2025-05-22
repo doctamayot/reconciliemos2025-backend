@@ -1,10 +1,7 @@
 const jwt = require("jsonwebtoken");
 const userService = require("./userService");
 
-console.log("[authService.js] Archivo cargado.");
-
 const loginUser = async (email, password) => {
-  console.log(`[authService.loginUser] Intentando login para: ${email}`);
   // La siguiente línea es donde userService.findUserByEmail se llama.
   // Si hay un error DENTRO de findUserByEmail, podríamos no ver los logs siguientes.
   const userDocument = await userService.findUserByEmail(email);
@@ -23,9 +20,6 @@ const loginUser = async (email, password) => {
     error.statusCode = 401;
     throw error;
   }
-  console.log(
-    `[authService.loginUser] Usuario recuperado por servicio: ${userDocument.email}, isActive: ${userDocument.isActive}`
-  );
 
   if (!userDocument.isActive) {
     console.warn(
@@ -38,7 +32,6 @@ const loginUser = async (email, password) => {
     throw error;
   }
 
-  console.log("[authService.loginUser] Comparando contraseñas...");
   const isMatch = await userDocument.comparePassword(password); // Llama al método del modelo
   if (!isMatch) {
     console.error("[authService.loginUser] Contraseña NO coincide.");
@@ -47,7 +40,6 @@ const loginUser = async (email, password) => {
     throw error;
   }
 
-  console.log("[authService.loginUser] Login exitoso, generando token...");
   const userObjectForPayload = userDocument.toObject
     ? userDocument.toObject()
     : { ...userDocument };
@@ -70,9 +62,6 @@ const loginUser = async (email, password) => {
   delete userResponse.activationTokenExpires;
   delete userResponse.__v;
 
-  console.log(
-    "[authService.loginUser] Token y respuesta de usuario generados."
-  );
   return { token, user: userResponse };
 };
 
