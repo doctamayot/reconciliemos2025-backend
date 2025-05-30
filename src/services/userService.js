@@ -76,16 +76,13 @@ const createUser = async (userData) => {
       error.statusCode = 400; // Bad Request
       throw error;
     }
-    const existingSicac = await User.findOne({ numeroSicac });
+    const existingSicac = await User.findOne({ numeroSicac: numeroSicac, role: 'conciliador' });
     if (existingSicac) {
-      const error = new Error(
-        "El Número SICAAC ya está registrado para otro conciliador."
-      );
-      error.statusCode = 409;
-      throw error;
+        const error = new Error('El Número SICAAC ya está registrado para otro conciliador.');
+        error.statusCode = 409; throw error;
     }
     userToCreateData.numeroSicac = numeroSicac;
-  } else if (numeroSicac && role !== "conciliador") {
+  } else  {
     // Ignorar numeroSicac si el rol no es conciliador
     // console.warn(`[userService.createUser] Se proveyó numeroSicac para un rol '${role}', será ignorado.`);
   }

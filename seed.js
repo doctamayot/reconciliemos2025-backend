@@ -28,7 +28,7 @@ const seedAdmin = async () => {
         role: "admin",
         firstName: "Admin",
         lastName: "Principal",
-        cedula: "1234345",
+        cedula: "12345",
       });
       console.log("Usuario administrador creado exitosamente!");
     }

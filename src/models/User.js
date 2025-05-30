@@ -53,12 +53,13 @@ const userSchema = new mongoose.Schema(
     phoneNumber: {
       type: String,
       trim: true,
+      
     },
     numeroSicac: {
       // Solo aplica a conciliadores, manejado en el servicio
       type: String,
       trim: true,
-      default: null,
+      
     },
     isActive: {
       // Ahora por defecto true
@@ -84,6 +85,8 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+
+
 // Método comparePassword (sin cambios)
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
@@ -92,6 +95,10 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
     throw error;
   }
 };
+
+
+
+
 
 // Método createActivationToken ya no es necesario y se elimina
 
