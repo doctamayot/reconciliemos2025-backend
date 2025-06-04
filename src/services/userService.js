@@ -157,11 +157,35 @@ const createUser = async (userData) => {
 };
 
 /**
- * Obtiene todos los usuarios (para el admin).
- * @returns {Promise<Array<Object>>} Un array de objetos de usuario (sin contraseñas).
+ * Obtiene todos los usuarios con paginación (para el admin).
+ * @param {Object} options - Opciones de paginación.
+ * @param {number} options.page - Número de página actual (ej. 1, 2, ...).
+ * @param {number} options.limit - Número de usuarios por página.
+ * @returns {Promise<Object>} Objeto con { users, totalUsers, currentPage, totalPages, hasMore }
  */
-const getAllUsers = async () => {
-  return await User.find({}).select("-password");
+const getAllUsers = async (options = {}) => {
+  const page = parseInt(options.page, 10) || 1;
+  const limit = parseInt(options.limit, 10) || 10; // Por defecto 10 usuarios por página
+  const skip = (page - 1) * limit;
+
+  // Obtener el total de documentos para calcular el total de páginas
+  const totalUsers = await User.countDocuments({});
+
+  const users = await User.find({})
+    .select('-password') // Excluimos campos sensibles
+    .sort({ createdAt: -1 }) // Ordenar por más recientes (opcional)
+    .skip(skip)
+    .limit(limit);
+
+  const totalPages = Math.ceil(totalUsers / limit);
+
+  return {
+    users,
+    totalUsers,
+    currentPage: page,
+    totalPages,
+    hasMore: page < totalPages,
+  };
 };
 
 /**

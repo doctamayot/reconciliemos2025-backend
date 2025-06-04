@@ -5,13 +5,15 @@ const User = require("../models/User"); // Importación de User para el delete
 // Admin: Obtener todos los usuarios
 const getAllUsersByAdmin = async (req, res, next) => {
   try {
-    const users = await userService.getAllUsers();
-    res.json(users);
+    // Obtener page y limit de los query params (ej. /api/users?page=1&limit=15)
+    const page = parseInt(req.query.page, 10);
+    const limit = parseInt(req.query.limit, 10);
+
+    const paginatedData = await userService.getAllUsers({ page, limit });
+    res.json(paginatedData); // Devolver el objeto con usuarios y metadatos de paginación
   } catch (error) {
     const statusCode = error.statusCode || 500;
-    res
-      .status(statusCode)
-      .json({ message: error.message || "Error al obtener los usuarios." });
+    res.status(statusCode).json({ message: error.message || 'Error al obtener los usuarios.' });
   }
 };
 
