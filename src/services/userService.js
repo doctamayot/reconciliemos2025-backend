@@ -165,27 +165,53 @@ const createUser = async (userData) => {
  */
 const getAllUsers = async (options = {}) => {
   const page = parseInt(options.page, 10) || 1;
-  const limit = parseInt(options.limit, 10) || 10; // Por defecto 10 usuarios por página
+  const limit = parseInt(options.limit, 10) || 15;
   const skip = (page - 1) * limit;
 
-  // Obtener el total de documentos para calcular el total de páginas
-  const totalUsers = await User.countDocuments({});
+  
+  // Construir el objeto de filtro para la consulta a MongoDB
+  const queryFilter = {};
+  if (options.role && options.role !== 'todos') {
+    queryFilter.role = options.role;
+  }
+  
+  // Lógica de búsqueda
+  if (options.search) {
+    const searchRegex = new RegExp(options.search, 'i'); // 'i' para búsqueda case-insensitive
+    queryFilter.$or = [
+      { firstName: searchRegex },
+      { lastName: searchRegex },
+      { email: searchRegex },
+      { cedula: searchRegex },
+      { numeroSicac: searchRegex },
+    ];
+  } else {
+    
+  }
 
-  const users = await User.find({})
-    .select('-password') // Excluimos campos sensibles
-    .sort({ createdAt: -1 }) // Ordenar por más recientes (opcional)
-    .skip(skip)
-    .limit(limit);
+  
 
-  const totalPages = Math.ceil(totalUsers / limit);
+  try {
+    const totalUsers = await User.countDocuments(queryFilter);
+    const users = await User.find(queryFilter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-  return {
-    users,
-    totalUsers,
-    currentPage: page,
-    totalPages,
-    hasMore: page < totalPages,
-  };
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    return {
+      users,
+      totalUsers,
+      currentPage: page,
+      totalPages,
+      hasMore: page < totalPages,
+    };
+  } catch (error) {
+    console.error("ERROR en la consulta de usuarios:", error);
+    throw error;
+  }
 };
 
 /**
@@ -289,13 +315,38 @@ const updateUserByAdmin = async (userId, updateData) => {
   return userObject;
 };
 
-// La función activateUserAccount se elimina ya que no se usa con este nuevo flujo.
+/**
+ * Admin: Establece una nueva contraseña para un usuario específico.
+ * @param {string} userId - El ID del usuario a actualizar.
+ * @param {string} newPassword - La nueva contraseña en texto plano.
+ * @returns {Promise<Object>} El objeto del usuario actualizado (sin contraseña).
+ */
+const adminSetUserPassword = async (userId, newPassword) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const error = new Error('Usuario no encontrado.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Asigna la nueva contraseña al campo 'password'.
+  // El middleware pre('save') del modelo User.js se encargará de hashearla automáticamente.
+  user.password = newPassword;
+  await user.save(); // Guardar el usuario con la nueva contraseña hasheada
+
+  // Opcional: Enviar un email informativo al usuario notificando el cambio de contraseña por parte de un admin
+  // (Por ahora omitimos este envío para mantenerlo simple como solicitaste)
+
+  const userObject = user.toObject();
+  delete userObject.password;
+  return userObject;
+};
 
 module.exports = {
   findUserByEmail,
   findUserById,
   createUser,
-  // activateUserAccount, // Eliminada
+  adminSetUserPassword,
   getAllUsers,
   updateUserByAdmin,
 };

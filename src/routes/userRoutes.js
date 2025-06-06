@@ -1,40 +1,20 @@
-// src/routes/userRoutes.js
-const express = require("express");
-const userController = require("../controllers/userController"); // Importa el controlador
-const { protect, authorize } = require("../middlewares/authMiddleware");
+const express = require('express');
+const userController = require('../controllers/userController');
+const { protect, authorize } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// GET /api/users - Admin obtiene todos los usuarios
-router.get(
-  "/",
-  protect,
-  authorize(["admin"]),
-  userController.getAllUsersByAdmin // Asegúrate que esta función exista en userController
-);
+// Todas las rutas aquí están protegidas para admin
+router.use(protect, authorize(['admin'])); // Aplicar middlewares a todas las rutas de este archivo
 
-// GET /api/users/:id - Admin obtiene un usuario por ID
-router.get(
-  "/:id",
-  protect,
-  authorize(["admin"]),
-  userController.getUserByIdByAdmin // Asegúrate que esta función exista
-);
+router.get('/', userController.getAllUsersByAdmin);
+router.get('/:id', userController.getUserByIdByAdmin);
+router.put('/:id', userController.updateUserByAdminController);
+router.delete('/:id', userController.deleteUserByAdmin);
 
-// PUT /api/users/:id - Admin actualiza un usuario por ID
-router.put(
-  "/:id",
-  protect,
-  authorize(["admin"]),
-  userController.updateUserByAdminController // Asegúrate que esta función exista
-);
+// --- NUEVA RUTA PARA ESTABLECER CONTRASEÑA ---
+// PUT /api/users/:id/set-password
+router.put('/:id/set-password', userController.adminSetPasswordController);
+// --- FIN NUEVA RUTA ---
 
-// DELETE /api/users/:id - Admin elimina un usuario por ID
-router.delete(
-  "/:id",
-  protect,
-  authorize(["admin"]),
-  userController.deleteUserByAdmin // Asegúrate que esta función exista
-);
-
-module.exports = router; // Exporta el router
+module.exports = router;
