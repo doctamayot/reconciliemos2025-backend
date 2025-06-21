@@ -66,8 +66,17 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // activationToken y activationTokenExpires eliminados
+    profileImageUrl: {
+    type: String,
+    default: null,
   },
+    profileImageId: {
+    type: String, // Guardaremos el fileId de Google Drive
+    default: null,
+  },
+  
+  },
+  
   {
     timestamps: true,
   }

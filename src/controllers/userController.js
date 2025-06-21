@@ -1,7 +1,7 @@
 // src/controllers/userController.js
 const userService = require("../services/userService");
 const User = require("../models/User"); // Importación de User para el delete
-
+const googleDriveService = require('../services/googleDrive.service');
 // Admin: Obtener todos los usuarios
 const getAllUsersByAdmin = async (req, res, next) => {
   try {
@@ -119,10 +119,96 @@ const adminSetPasswordController = async (req, res, next) => {
   }
 };
 
+
+
+const uploadProfilePicture = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se ha subido ningún archivo.' });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+
+    // Si ya existe una foto, la eliminamos de Drive
+    if (user.profileImageId) {
+      await googleDriveService.deleteFile(user.profileImageId);
+    }
+
+    // Subir el nuevo archivo. Ahora devuelve un objeto { fileId, webContentLink }
+    const { fileId, webContentLink } = await googleDriveService.uploadFile(req.file);
+
+    // --- CAMBIADO: Guardamos ambos campos ---
+    user.profileImageId = fileId;
+    user.profileImageUrl = webContentLink;
+    await user.save();
+    
+    const userObject = user.toObject();
+    delete userObject.password;
+
+    res.json({
+      message: 'Foto de perfil actualizada exitosamente.',
+      user: userObject,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ message: error.message || 'Error al subir la foto de perfil.' });
+  }
+};
+
+const deleteProfilePicture = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user || !user.profileImageId) {
+            return res.status(400).json({ message: 'El usuario no tiene una foto de perfil para eliminar.' });
+        }
+        await googleDriveService.deleteFile(user.profileImageId);
+        // --- CAMBIADO: Limpiamos ambos campos ---
+        user.profileImageId = null;
+        user.profileImageUrl = null;
+        await user.save();
+        const userObject = user.toObject();
+        delete userObject.password;
+        res.json({ message: 'Foto de perfil eliminada exitosamente.', user: userObject });
+    } catch (error) {
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({ message: error.message || 'Error al eliminar la foto de perfil.' });
+    }
+};
+
+const getUserPicture = async (req, res, next) => {
+  try {
+    // Buscamos al usuario por el ID en la URL. Usamos un servicio que no excluya los campos que necesitamos.
+    const user = await userService.findUserById(req.params.id); // Asumiendo que findUserById devuelve el usuario completo
+    
+    if (!user || !user.profileImageId) {
+      // Si no hay usuario o no tiene foto, podrías devolver una imagen por defecto o un 404.
+      return res.status(404).json({ message: 'Imagen de perfil no encontrada.' });
+    }
+    
+    // Obtenemos el stream del archivo desde Google Drive
+    const imageStream = await googleDriveService.getFileStream(user.profileImageId);
+    
+    // Establecemos las cabeceras para que el navegador sepa que es una imagen
+    // res.setHeader('Content-Type', 'image/jpeg'); // O el tipo de imagen correcto
+    
+    // Transmitimos (pipe) el stream de la imagen directamente a la respuesta
+    imageStream.pipe(res);
+
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ message: error.message || 'Error al obtener la imagen de perfil.' });
+  }
+};
+
 module.exports = {
   getAllUsersByAdmin,
   getUserByIdByAdmin,
   updateUserByAdminController,
   deleteUserByAdmin,
-  adminSetPasswordController
+  adminSetPasswordController,
+  uploadProfilePicture,
+  deleteProfilePicture,
+  getUserPicture
 };

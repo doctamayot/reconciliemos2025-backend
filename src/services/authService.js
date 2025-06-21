@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const userService = require("./userService");
+const User = require('../models/User')
 
 const loginUser = async (email, password) => {
   // La siguiente línea es donde userService.findUserByEmail se llama.
@@ -65,6 +66,31 @@ const loginUser = async (email, password) => {
   return { token, user: userResponse };
 };
 
+
+const changePassword = async (userId, currentPassword, newPassword) => {
+  // Buscamos el usuario por ID, obteniendo también su contraseña para comparar
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    const error = new Error('Usuario no encontrado.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    const error = new Error('La contraseña actual es incorrecta.');
+    error.statusCode = 401; // Unauthorized
+    throw error;
+  }
+
+  // Asigna la nueva contraseña. El hook pre('save') se encargará de hashearla.
+  user.password = newPassword;
+  await user.save();
+
+  return { message: 'Contraseña actualizada exitosamente.' };
+};
+
 module.exports = {
   loginUser,
+  changePassword
 };

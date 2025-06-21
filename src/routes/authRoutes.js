@@ -4,6 +4,11 @@ const { protect, authorize } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
+router.put(
+  '/me/changepassword',
+  protect, // Protegida, solo para usuarios logueados
+  authController.changeMyPassword
+);
 router.post("/login", authController.login);
 router.get("/me", protect, authController.getMyProfile);
 router.post(

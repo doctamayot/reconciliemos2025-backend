@@ -1,5 +1,6 @@
 const authService = require("../services/authService");
 const userService = require("../services/userService");
+
 // 'jsonwebtoken' ya no es necesario aquí si la activación con login automático se eliminó.
 
 // console.log('[authController.js] Archivo cargado.'); // Puedes mantenerlo para depuración inicial
@@ -116,7 +117,23 @@ const adminCreateUser = async (req, res, next) => {
       .json({ message: error.message || `Error al crear el usuario ${role}.` });
   }
 };
+const changeMyPassword = async (req, res, next) => {
+  const userId = req.user.id;
+  const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
+  if (!currentPassword || !newPassword || !confirmNewPassword) { /* ... validación ... */ }
+  if (newPassword !== confirmNewPassword) { /* ... validación ... */ }
+  const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+  if (!passwordRegex.test(newPassword)) { /* ... validación ... */ }
+
+  try {
+    const result = await authService.changePassword(userId, currentPassword, newPassword);
+    res.json(result);
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ message: error.message || 'Error al cambiar la contraseña.' });
+  }
+};
 // La función activateAccount y su endpoint correspondiente fueron eliminados
 // ya que los usuarios creados por el admin ahora están activos por defecto.
 
@@ -124,5 +141,6 @@ module.exports = {
   login,
   getMyProfile,
   adminCreateUser,
+  changeMyPassword
   // activateAccount, // <- Eliminado
 };
